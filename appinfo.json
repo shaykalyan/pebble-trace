@@ -1,0 +1,30 @@
+{
+    "versionLabel": "1.0.0",
+    "uuid": "02b4ac41-ba2b-429e-89be-12cbe8409091",
+    "appKeys": {},
+    "longName": "Trace",
+    "versionCode": 1,
+    "capabilities": [
+        ""
+    ],
+    "shortName": "Trace",
+    "companyName": "Shay Kalyan",
+    "watchapp": {
+        "watchface": true
+    },
+    "resources": {
+        "media": [
+            {
+                "type": "png",
+                "name": "IMAGE_BG",
+                "file": "images/bg.png"
+            },
+            {
+                "menuIcon": true,
+                "type": "png",
+                "name": "MENU_ICON",
+                "file": "images/menu_icon.png"
+            }
+        ]
+    }
+}
