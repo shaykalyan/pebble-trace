@@ -9,7 +9,7 @@ The outer ring displays minutes and the inner ring indicates the hours. At five 
 ![Photo](other/photo_small.jpg)
 
 
-![Photo](other/screenshot_animated.gif)
+![Photo](other/screenshot_animation.gif)
 ![Photo](other/screenshot_1.png)
 ![Photo](other/screenshot_2.png)
 ![Photo](other/screenshot_3.png)
