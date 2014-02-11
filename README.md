@@ -17,4 +17,15 @@ The outer ring displays minutes and the inner ring indicates the hours. At five 
 
 ## Installation
 
-Requires Pebble 2.0 firmware and above to install this watch face. Simply [click here](pbw/trace.pbw) from your mobile device to load it directly to your Pebble!
+Requires Pebble 2.0 firmware and above to install this watch face. 
+
+Simply search for **Trace** in the Pebble App Store to load it onto your device!
+
+
+## Changlog
+- 1.1.0
+    - Invert watch face via the new configuration screen.
+    - Set a 5 minute vibrate interval via the configuration screen.
+
+- 1.0.0
+    - Initial release
