@@ -1,5 +1,6 @@
 #include <pebble.h>
 
+// coordinate defintions for tracing blocks
 #define M1A GRect(103,6,35,7)
 #define M1A_COLLAPSED GRect(138,6,0,7)
 #define M1B GRect(131,13,7,13)
@@ -49,18 +50,29 @@
 #define H11B GRect(26,19,21,7)
 #define H11B_COLLAPSED GRect(26,19,0,7)
 #define H12 GRect(47,19,50,7)
+
+// persistant storage keys
+#define PERSIST_INVERTED 1
+#define PERSIST_VIBRATE 2
+	
+// appmessage keys
+enum {
+	KEY_INVERTED = 0,
+	KEY_VIBRATE_5 = 1
+};
 	
 Window *window;
 GBitmap *bg_bitmap;
 BitmapLayer *bg_layer;
-InverterLayer *block_h_a, *block_h_b, *block_m_a, *block_m_b;
+InverterLayer *block_h_a, *block_h_b, *block_m_a, *block_m_b, *invert_canvas;
+bool isInverted, isVibrateOn;
 
 void on_animation_stopped(Animation *anim, bool finished, void *context)
 {
     // free the memory used by the Animation
     property_animation_destroy((PropertyAnimation*) anim);
 }
- 
+
 void animate_layer(Layer *layer, GRect *start, GRect *finish, int duration, int delay)
 {
     // declare animation
@@ -89,6 +101,7 @@ void setHour(int hour) {
 	if (hour == 0) {
 		hour = 12;
 	}
+	// animate transition to current hour
 	switch (hour)
 	{
 		case 1: 
@@ -202,6 +215,7 @@ void setHour(int hour) {
 }
 
 void setMinute(int minute) {
+	// animate transition to current minute
 	switch (minute) 
 	{
 		case 5: 
@@ -315,6 +329,63 @@ void setMinute(int minute) {
 	}
 }
 
+void invert_canvas_add() {
+	// add inverting layer to window
+	layer_add_child(window_get_root_layer(window), (Layer*)invert_canvas);
+}
+
+void invert_canvas_remove() {
+	// remove inverting layer from window
+	layer_remove_from_parent((Layer*)invert_canvas);
+}
+
+void process_tuple(Tuple *t) {
+	// get key
+	int key = t->key;
+	// get integer value, if present
+	int value = t->value->int32;
+
+	// get string value, if present
+	char string_value[32];
+	strcpy(string_value, t->value->cstring);
+	
+	// decide what to do
+	switch(key) {
+		case KEY_INVERTED: {
+			if ( strcmp(string_value, "on") == 0) {
+				invert_canvas_add();
+				isInverted = true;
+			} else {
+				invert_canvas_remove();
+				isInverted = false;
+			} 
+			break;
+		} case KEY_VIBRATE_5: {
+			isVibrateOn = (strcmp(string_value, "on") == 0) ? true : false;
+			break;
+		}
+	}
+}
+
+static void in_received_handler(DictionaryIterator *iter, void *context) 
+{
+	// get first item
+	Tuple *t = dict_read_first(iter);
+	if(t)
+	{
+		process_tuple(t);
+	}
+  	// get next item
+  	while(t != NULL)
+	{
+		t = dict_read_next(iter);
+		if(t)
+		{
+      		process_tuple(t);
+		}
+	}
+}
+
 void tick_handler(struct tm *tick_time, TimeUnits units_changed) {	
 	int minute = tick_time->tm_min;
 	int hour = tick_time->tm_hour;
@@ -324,6 +395,9 @@ void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 	if (second == 0) {
 		if (minute % 5 == 0) {
 			setMinute(minute);
+			if (isVibrateOn) {
+				vibes_short_pulse();
+			}
 			if (minute == 0) {
 				setHour(hour);
 			}
@@ -344,10 +418,19 @@ void window_load() {
 	block_h_a = inverter_layer_create(GRect(0,0,0,0));
 	block_h_b = inverter_layer_create(GRect(0,0,0,0));
 	
+	// create inverter layer for inverting the watch face
+	invert_canvas = inverter_layer_create(GRect(0,0,144,168));
+	
+	// add animating blocks to the window
 	layer_add_child(window_get_root_layer(window), (Layer*) block_m_a);
 	layer_add_child(window_get_root_layer(window), (Layer*)block_m_b);
 	layer_add_child(window_get_root_layer(window), (Layer*) block_h_a);	
 	layer_add_child(window_get_root_layer(window), (Layer*)block_h_b);
+	
+	// invert watch face if required
+	if (isInverted) {
+		invert_canvas_add();
+	}
 	
 	// set time initially
 	struct tm *tick_time;
@@ -372,6 +455,7 @@ void window_unload() {
 	inverter_layer_destroy(block_m_b);
 	inverter_layer_destroy(block_h_a);
 	inverter_layer_destroy(block_h_b);
+	inverter_layer_destroy(invert_canvas);
 }
 
 void init() {
@@ -381,12 +465,23 @@ void init() {
 		.unload = window_unload
 	});
 	tick_timer_service_subscribe(SECOND_UNIT, (TickHandler) tick_handler);
+	
+	// register AppMessage events
+	app_message_register_inbox_received(in_received_handler);           
+	app_message_open(512, 512);
+
+	// read current settings 
+	isInverted = persist_exists(PERSIST_INVERTED) ? persist_read_bool(PERSIST_INVERTED) : false;
+	isVibrateOn = persist_exists(PERSIST_VIBRATE) ? persist_read_bool(PERSIST_VIBRATE) : false;
+	
 	window_stack_push(window, true);
 }
 
 void deinit() {
 	window_destroy(window);
 	tick_timer_service_unsubscribe();
+	persist_write_bool(PERSIST_INVERTED, isInverted);
+	persist_write_bool(PERSIST_VIBRATE, isVibrateOn);
 }
 
 int main(void) {

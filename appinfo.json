@@ -1,11 +1,14 @@
 {
-    "versionLabel": "1.0.0",
+    "versionLabel": "1.1.0",
     "uuid": "02b4ac41-ba2b-429e-89be-12cbe8409091",
-    "appKeys": {},
+    "appKeys": {
+        "KEY_INVERTED": 0,
+        "KEY_VIBRATE_5": 1
+    },
     "longName": "Trace",
     "versionCode": 1,
     "capabilities": [
-        ""
+        "configurable"
     ],
     "shortName": "Trace",
     "companyName": "Shay Kalyan",
