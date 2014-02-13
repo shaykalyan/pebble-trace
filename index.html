@@ -66,9 +66,7 @@
           var field = $("#"+key);
           if (field !== null) {
             var value = decodeURIComponent(params[key]);           
-            option = $("#"+key+">option[value='"+value+"']");
-            option.attr("selected", "selected");
-            field.trigger("change");
+            field.val(value).slider("refresh");
           }
         }
       }
