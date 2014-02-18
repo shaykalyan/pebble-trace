@@ -1,6 +1,6 @@
 #include <pebble.h>
 
-// coordinate defintions for tracing blocks
+/* coordinate defintions for tracing blocks */
 #define M1A GRect(103,6,35,7)
 #define M1A_COLLAPSED GRect(138,6,0,7)
 #define M1B GRect(131,13,7,13)
@@ -51,46 +51,68 @@
 #define H11B_COLLAPSED GRect(26,19,0,7)
 #define H12 GRect(47,19,50,7)
 
-// persistant storage keys
+/* persistant storage keys */
 #define PERSIST_INVERTED 1
 #define PERSIST_VIBRATE 2
-	
-// appmessage keys
+#define PERSIST_DATE 3
+
+/* period for which the date is visible on accelerometer flick (ms)*/ 
+#define TIMER_DATE_DELAY 3000
+
+/* prototypes */
+void on_animation_stopped(Animation *anim, bool finished, void *context);
+void animate_layer(Layer *layer, GRect *start, GRect *finish, int duration, int delay);
+void setHour(int hour);
+void setMinute(int minute);
+void invert_canvas_add();
+void invert_canvas_remove();
+void timer_callback(void *data);
+void accel_tap_handler(AccelAxisType axis, int32_t direction);
+void process_tuple(Tuple *t);
+void in_received_handler(DictionaryIterator *iter, void *context) ;
+void setDate(struct tm *tick_time); 
+void tick_handler(struct tm *tick_time, TimeUnits units_changed) ;
+
+/* appmessage keys */
 enum {
 	KEY_INVERTED = 0,
-	KEY_VIBRATE_5 = 1
+	KEY_VIBRATE_5 = 1,
+	KEY_DATE = 2
 };
-	
+
 Window *window;
+AppTimer *timer;
 GBitmap *bg_bitmap;
 BitmapLayer *bg_layer;
+TextLayer *date_layer;
 InverterLayer *block_h_a, *block_h_b, *block_m_a, *block_m_b, *invert_canvas;
-bool isInverted, isVibrateOn;
+char date_text[] = "Sun 01";
+bool isInverted, isVibrateOn, isDateOn;
 
-void on_animation_stopped(Animation *anim, bool finished, void *context)
-{
-    // free the memory used by the Animation
-    property_animation_destroy((PropertyAnimation*) anim);
-}
+/**************
+* Time and Date
+***************/
 
-void animate_layer(Layer *layer, GRect *start, GRect *finish, int duration, int delay)
-{
-    // declare animation
-    PropertyAnimation *anim = property_animation_create_layer_frame(layer, start, finish);
-     
-    // set characteristics
-    animation_set_duration((Animation*) anim, duration);
-    animation_set_delay((Animation*) anim, delay);
-     
-    // set stopped handler to free memory
-    AnimationHandlers handlers = {
-        // the reference to the stopped handler is the only one in the array
-        .stopped = (AnimationStoppedHandler) on_animation_stopped
-    };
-    animation_set_handlers((Animation*) anim, handlers, NULL);
-     
-    //Start animation!
-    animation_schedule((Animation*) anim);
+void tick_handler(struct tm *tick_time, TimeUnits units_changed) {	
+	int minute = tick_time->tm_min;
+	int hour = tick_time->tm_hour;
+	int second = tick_time->tm_sec;
+	
+	// update on the minute
+	if (second == 0) {
+		if (minute % 5 == 0) {
+			setMinute(minute);
+			if (isVibrateOn) {
+				vibes_short_pulse();
+			}
+			if (minute == 0) {
+				// update hour
+				setHour(hour);
+				// update date
+				setDate(tick_time);
+			}
+		}
+	}
 }
 
 void setHour(int hour) {
@@ -329,27 +351,57 @@ void setMinute(int minute) {
 	}
 }
 
+void setDate(struct tm *tick_time) {
+	strftime(date_text, sizeof("Sun 01"), "%a %d", tick_time);
+	text_layer_set_text(date_layer, date_text);
+}
+
+/**************
+* Invert Layer
+***************/
+
 void invert_canvas_add() {
-	// add inverting layer to window
 	layer_add_child(window_get_root_layer(window), (Layer*)invert_canvas);
 }
 
 void invert_canvas_remove() {
-	// remove inverting layer from window
 	layer_remove_from_parent((Layer*)invert_canvas);
 }
+
+/**************
+* Accelerometer Timer
+***************/
+
+void timer_callback(void *data) {
+	layer_remove_from_parent((Layer*)date_layer);
+}
+
+void accel_tap_handler(AccelAxisType axis, int32_t direction) {
+  	// if inverter layer is present, insert date layer below it
+	if (isInverted) {
+		layer_insert_below_sibling((Layer*)date_layer, (Layer*)invert_canvas);	
+	} else {
+		layer_add_child(window_get_root_layer(window),(Layer*)date_layer);
+	}
+	// fire timer	
+	timer = app_timer_register(TIMER_DATE_DELAY, (AppTimerCallback)timer_callback, NULL);
+}
+
+/**************
+* App Message
+***************/
 
 void process_tuple(Tuple *t) {
 	// get key
 	int key = t->key;
-	// get integer value, if present
+	
+	// get integer value
 	int value = t->value->int32;
 
-	// get string value, if present
+	// get string value
 	char string_value[32];
 	strcpy(string_value, t->value->cstring);
 	
-	// decide what to do
 	switch(key) {
 		case KEY_INVERTED: {
 			if ( strcmp(string_value, "on") == 0) {
@@ -363,56 +415,74 @@ void process_tuple(Tuple *t) {
 		} case KEY_VIBRATE_5: {
 			isVibrateOn = (strcmp(string_value, "on") == 0) ? true : false;
 			break;
+		} case KEY_DATE: {
+			if ( strcmp(string_value, "on") == 0 ) {
+				accel_tap_service_subscribe(&accel_tap_handler);
+				isDateOn = true;
+			} else {
+				if (isDateOn) {
+					accel_tap_service_unsubscribe();
+				}
+				isDateOn = false;
+			}
+			break;
 		}
 	}
 }
 
-static void in_received_handler(DictionaryIterator *iter, void *context) 
-{
+void in_received_handler(DictionaryIterator *iter, void *context) {
 	// get first item
 	Tuple *t = dict_read_first(iter);
-	if(t)
-	{
+	if(t) {
 		process_tuple(t);
 	}
   	// get next item
-  	while(t != NULL)
-	{
+  	while(t != NULL) {
 		t = dict_read_next(iter);
-		if(t)
-		{
+		if(t) {
       		process_tuple(t);
 		}
 	}
 }
 
-void tick_handler(struct tm *tick_time, TimeUnits units_changed) {	
-	int minute = tick_time->tm_min;
-	int hour = tick_time->tm_hour;
-	int second = tick_time->tm_sec;
-	
-	// update on the minute
-	if (second == 0) {
-		if (minute % 5 == 0) {
-			setMinute(minute);
-			if (isVibrateOn) {
-				vibes_short_pulse();
-			}
-			if (minute == 0) {
-				setHour(hour);
-			}
-		}
-	}
+/**************
+* Animation
+***************/
+
+void on_animation_stopped(Animation *anim, bool finished, void *context) {
+    property_animation_destroy((PropertyAnimation*) anim);
 }
 
+void animate_layer(Layer *layer, GRect *start, GRect *finish, int duration, int delay)
+{
+    PropertyAnimation *anim = property_animation_create_layer_frame(layer, start, finish);
+
+    animation_set_duration((Animation*) anim, duration);
+    animation_set_delay((Animation*) anim, delay);
+     
+    AnimationHandlers handlers = {
+        .stopped = (AnimationStoppedHandler) on_animation_stopped
+    };
+    animation_set_handlers((Animation*) anim, handlers, NULL);
+
+    animation_schedule((Animation*) anim);
+}
+
+/**************
+* Window
+***************/
+
 void window_load() {
+	// get font handle
+	ResHandle font_handle = resource_get_handle(RESOURCE_ID_FONT_IMAGINE_20);
+	
 	// set background
 	bg_bitmap = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_BG);
 	bg_layer = bitmap_layer_create(GRect(0,0,144,168));
 	bitmap_layer_set_bitmap(bg_layer, bg_bitmap);
 	layer_add_child(window_get_root_layer(window), bitmap_layer_get_layer(bg_layer));
 	
-	// create and add travelling blocks to trace outlines
+	// create travelling blocks to trace outlines
 	block_m_a = inverter_layer_create(GRect(0,0,0,0));
 	block_m_b = inverter_layer_create(GRect(0,0,0,0));
 	block_h_a = inverter_layer_create(GRect(0,0,0,0));
@@ -423,16 +493,23 @@ void window_load() {
 	
 	// add animating blocks to the window
 	layer_add_child(window_get_root_layer(window), (Layer*) block_m_a);
-	layer_add_child(window_get_root_layer(window), (Layer*)block_m_b);
+	layer_add_child(window_get_root_layer(window), (Layer*) block_m_b);
 	layer_add_child(window_get_root_layer(window), (Layer*) block_h_a);	
-	layer_add_child(window_get_root_layer(window), (Layer*)block_h_b);
+	layer_add_child(window_get_root_layer(window), (Layer*) block_h_b);
 	
-	// invert watch face if required
+	// create date layer
+	date_layer = text_layer_create(GRect(0,70,144,20));
+	text_layer_set_background_color(date_layer, GColorClear);
+	text_layer_set_text_color(date_layer, GColorBlack);
+	text_layer_set_text_alignment(date_layer, GTextAlignmentCenter);
+	text_layer_set_font(date_layer, fonts_load_custom_font(font_handle));
+	
+	// add inverter layer if watchface is set to invert
 	if (isInverted) {
 		invert_canvas_add();
 	}
 	
-	// set time initially
+	// set time and date initially
 	struct tm *tick_time;
 	time_t temp;
 	temp = time(NULL);
@@ -446,6 +523,7 @@ void window_load() {
 	
 	setMinute(minute);
 	setHour(hour);
+	setDate(tick_time);
 }
 
 void window_unload() {
@@ -456,6 +534,8 @@ void window_unload() {
 	inverter_layer_destroy(block_h_a);
 	inverter_layer_destroy(block_h_b);
 	inverter_layer_destroy(invert_canvas);
+	text_layer_destroy(date_layer);
+	app_timer_cancel(timer);
 }
 
 void init() {
@@ -464,15 +544,23 @@ void init() {
 		.load = window_load,
 		.unload = window_unload
 	});
+
+	// subscribe to time 
 	tick_timer_service_subscribe(SECOND_UNIT, (TickHandler) tick_handler);
 	
 	// register AppMessage events
 	app_message_register_inbox_received(in_received_handler);           
 	app_message_open(512, 512);
-
+	
 	// read current settings 
 	isInverted = persist_exists(PERSIST_INVERTED) ? persist_read_bool(PERSIST_INVERTED) : false;
 	isVibrateOn = persist_exists(PERSIST_VIBRATE) ? persist_read_bool(PERSIST_VIBRATE) : false;
+	isDateOn = persist_exists(PERSIST_DATE) ? persist_read_bool(PERSIST_DATE) : false;
+	
+	if (isDateOn) {
+		// subscribe to accelerometer for date
+		accel_tap_service_subscribe(&accel_tap_handler);
+	}
 	
 	window_stack_push(window, true);
 }
@@ -480,8 +568,12 @@ void init() {
 void deinit() {
 	window_destroy(window);
 	tick_timer_service_unsubscribe();
+	if (isDateOn) {
+		accel_tap_service_unsubscribe();
+	}
 	persist_write_bool(PERSIST_INVERTED, isInverted);
 	persist_write_bool(PERSIST_VIBRATE, isVibrateOn);
+	persist_write_bool(PERSIST_DATE, isDateOn);
 }
 
 int main(void) {
