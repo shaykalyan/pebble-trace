@@ -17,7 +17,7 @@
       <div data-role="content">
 
         <div data-role="fieldcontain">
-          <label for="KEY_INVERTED">Inverted</label>
+          <label for="KEY_INVERTED">Invert - White On Black Background</label>
           <select name="KEY_INVERTED" id="KEY_INVERTED" data-role="slider">
             <option value="off">Off</option>
             <option value="on">On</option>
@@ -25,8 +25,16 @@
         </div>
 
         <div data-role="fieldcontain">
-          <label for="KEY_VIBRATE_5">Vibrate every 5 minutes</label>
+          <label for="KEY_VIBRATE_5">Vibrate - Every 5 Minutes</label>
           <select name="KEY_VIBRATE_5" id="KEY_VIBRATE_5" data-role="slider">
+            <option value="off">Off</option>
+            <option value="on">On</option>
+          </select>
+        </div>
+
+        <div data-role="fieldcontain">
+          <label for="KEY_DATE">Date - Flick Wrist To View</label>
+          <select name="KEY_DATE" id="KEY_DATE" data-role="slider">
             <option value="off">Off</option>
             <option value="on">On</option>
           </select>
@@ -47,7 +55,8 @@
       function saveOptions() {
         var options = {
           'KEY_INVERTED': $("#KEY_INVERTED").val(),
-          'KEY_VIBRATE_5': $("#KEY_VIBRATE_5").val()
+          'KEY_VIBRATE_5': $("#KEY_VIBRATE_5").val(),
+          'KEY_DATE': $("#KEY_DATE").val()
         }
         return options;
       }
