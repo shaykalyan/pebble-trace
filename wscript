@@ -20,7 +20,7 @@ def configure(ctx):
     hint = hint.bake(['--config', 'pebble-jshintrc'])
 
 def build(ctx):
-    if True:
+    if False:
         try:
             hint("src/js/pebble-js-app.js", _tty_out=False) # no tty because there are none in the cloudpebble sandbox.
         except ErrorReturnCode_2 as e:

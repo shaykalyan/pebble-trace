@@ -15,7 +15,9 @@ The outer ring displays minutes and the inner ring indicates the hours. At five 
 ![Photo](other/screenshot_3.png)
 ![Photo](other/screenshot_4.png)
 ![Photo](other/screenshot_5.png)
-![Photo](other/screenshot_date.png)
+![Photo](other/screenshot_style_a.png)
+![Photo](other/screenshot_style_b.png)
+![Photo](other/screenshot_style_c.png)
 
 ## Installation
 
@@ -25,6 +27,8 @@ Simply search for **Trace** in the Pebble App Store to load it onto your device!
 Or alternatively, [click here](pebble://appstore/52ef5b1dc503c80b8d000028/) to launch the Pebble appstore page directly.
 
 ## Changlog
+- 1.3.0
+	- Added different flick view styles. Updated configuration page respectively.
 - 1.2.0
     - Ability to show the date for a few seconds with the flick of the wrist.
 - 1.1.0

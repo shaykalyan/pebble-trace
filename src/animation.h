@@ -1,0 +1,58 @@
+#ifndef ANIMATION_H 
+#define ANIMATION_H
+
+/* coordinate defintions for tracing blocks */
+#define M1A GRect(103,6,35,7)
+#define M1A_COLLAPSED GRect(138,6,0,7)
+#define M1B GRect(131,13,7,13)
+#define M1B_COLLAPSED GRect(131,13,7,0)
+#define M2 GRect(131,26,7,39)
+#define M3 GRect(131,65,7,38)
+#define M4 GRect(131,103,7,39)
+#define M5A GRect(131,142,7,20)
+#define M5A_COLLAPSED GRect(131,162,7,0)
+#define M5B GRect(103,155,28,7)
+#define M5B_COLLAPSED GRect(131,155,0,7)
+#define M6 GRect(41,155,62,7)
+#define M7A GRect(6,155,35,7)
+#define M7A_COLLAPSED GRect(6,155,0,7)
+#define M7B GRect(6,142,7,13)
+#define M7B_COLLAPSED GRect(6,155,7,0)
+#define M8 GRect(6,103,7,39)
+#define M9 GRect(6,65,7,38)
+#define M10 GRect(6,26,7,39)
+#define M11A GRect(6,6,7,26)
+#define M11A_COLLAPSED GRect(6,6,7,0)
+#define M11B GRect(13,6,28,7)
+#define M11B_COLLAPSED GRect(13,6,0,7)
+#define M12 GRect(41,6,62,7)
+	
+#define H1A GRect(97,19,28,7)
+#define H1A_COLLAPSED GRect(125,19,0,7)
+#define H1B GRect(118,26,7,8)
+#define H1B_COLLAPSED GRect(118,26,7,0)
+#define H2 GRect(118,34,7,36)
+#define H3 GRect(118,70,7,28)
+#define H4 GRect(118,98,7,36)
+#define H5A GRect(118,134,7,15)
+#define H5A_COLLAPSED GRect(118,149,7,0)
+#define H5B GRect(97,142,21,7)
+#define H5B_COLLAPSED GRect(118,142,0,7)
+#define H6 GRect(47,142,50,7)
+#define H7A GRect(19,142,28,7)
+#define H7A_COLLAPSED GRect(19,142,0,7)
+#define H7B GRect(19,134,7,8)
+#define H7B_COLLAPSED GRect(19,142,7,0)
+#define H8 GRect(19,89,7,36)
+#define H9 GRect(19,70,7,28)
+#define H10 GRect(19,34,7,36)
+#define H11A GRect(19,19,7,15)
+#define H11A_COLLAPSED GRect(19,19,7,0)
+#define H11B GRect(26,19,21,7)
+#define H11B_COLLAPSED GRect(26,19,0,7)
+#define H12 GRect(47,19,50,7)
+
+void on_animation_stopped(Animation *anim, bool finished, void *context);
+void animate_layer(Layer *layer, GRect *start, GRect *finish, int duration, int delay);
+
+#endif

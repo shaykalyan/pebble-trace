@@ -16,6 +16,9 @@
 
       <div data-role="content">
 
+        <p><strong>Note:</strong> New features require the latest version of the watch face to be installed. Please ensure you have v1.3.0.</p>
+        <hr><hr>
+
         <div data-role="fieldcontain">
           <label for="KEY_INVERTED">Invert - White On Black Background</label>
           <select name="KEY_INVERTED" id="KEY_INVERTED" data-role="slider">
@@ -33,12 +36,35 @@
         </div>
 
         <div data-role="fieldcontain">
-          <label for="KEY_DATE">Date - Flick Wrist To View</label>
-          <select name="KEY_DATE" id="KEY_DATE" data-role="slider">
+          <label for="KEY_FLICK">Flick View</label>
+          <select name="KEY_FLICK" id="KEY_FLICK" data-role="slider">
             <option value="off">Off</option>
             <option value="on">On</option>
           </select>
         </div>
+
+        <div data-role="collapsible">
+          <h3>Flick View Styles: </h3>
+          <div class="fieldcontain">
+            <label for="KEY_FLICK_0">Style A</label>
+            <input type="radio" name="KEY_FLICK_STYLE" id="KEY_FLICK_0" value="0" />
+            <img src="http://xshay.github.io/pebble-trace/other/screenshot_style_a.png" alt="Style_A">
+          </div>
+          <div class="fieldcontain">
+            <label for="KEY_FLICK_1">Style B</label>
+            <input type="radio" name="KEY_FLICK_STYLE" id="KEY_FLICK_1" value="1"  />
+            <img src="http://xshay.github.io/pebble-trace/other/screenshot_style_b.png" alt="Style_B">
+          </div>
+
+          <div class="fieldcontain">
+            <label for="KEY_FLICK_2">Style C</label>
+            <input type="radio" name="KEY_FLICK_STYLE" id="KEY_FLICK_2" value="2"  />
+            <img src="http://xshay.github.io/pebble-trace/other/screenshot_style_c.png" alt="Style_C">
+          </div>
+        </div>
+
+
+
 
         <div class="ui-body-a ui-body-b" data-position="fixed">
           <fieldset class="ui-grid-a">
@@ -53,9 +79,10 @@
 
       function saveOptions() {
         var options = {
-          'KEY_INVERTED': $("#KEY_INVERTED").val(),
-          'KEY_VIBRATE_5': $("#KEY_VIBRATE_5").val(),
-          'KEY_DATE': $("#KEY_DATE").val()
+          'KEY_INVERTED'    : $("#KEY_INVERTED").val(),
+          'KEY_VIBRATE_5'   : $("#KEY_VIBRATE_5").val(),
+          'KEY_FLICK'       : $("#KEY_FLICK").val(),
+          'KEY_FLICK_STYLE' : $('input[name="KEY_FLICK_STYLE"]:checked').val()
         }
         return options;
       }
@@ -70,11 +97,16 @@
 
       function setUrlOptions() {
         var params = getUrlOptions();
+
         for (key in params) {
-          var field = $("#"+key);
-          if (field !== null) {
-            var value = decodeURIComponent(params[key]);           
-            field.val(value).slider("refresh");
+          var value = decodeURIComponent(params[key]);
+          if (key == "KEY_FLICK_STYLE") {
+            $("#KEY_FLICK_" + value).prop('checked', 'checked').checkboxradio("refresh");
+          } else {
+            var field = $("#"+key);
+            if (field !== null) {
+              field.val(value).slider("refresh");
+            }
           }
         }
       }
@@ -89,6 +121,7 @@
 
         $("#b-submit").click(function() {
           console.log("Submit");
+          console.log(JSON.stringify(saveOptions()));
 
           var location = "pebblejs://close#" + encodeURIComponent(JSON.stringify(saveOptions()));
           console.log("Warping to: " + location);

@@ -10,6 +10,7 @@ Pebble.addEventListener("showConfiguration", function() {
 	console.log("Trace: Showing Configuration");
 	
 	var url = "http://xshay.github.io/pebble-trace/?";
+	
 	var firstParam = true;
 	
 	for(var i = 0, x = localStorage.length; i < x; i++) {
@@ -39,7 +40,7 @@ Pebble.addEventListener("webviewclosed", function(e) {
 	}	
 	console.log("Trace: Options Recorded - " + JSON.stringify(options));
 	
-	var dict = {KEY_INVERTED:options.KEY_INVERTED, KEY_VIBRATE_5:options.KEY_VIBRATE_5, KEY_DATE:options.KEY_DATE};
+	var dict = {KEY_INVERTED:options.KEY_INVERTED, KEY_VIBRATE_5:options.KEY_VIBRATE_5, KEY_FLICK:options.KEY_FLICK, KEY_FLICK_STYLE:options.KEY_FLICK_STYLE};
 	console.log("Trace: Dict Sending - " + JSON.stringify(dict));
 	
 	Pebble.sendAppMessage(dict, 

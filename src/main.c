@@ -1,97 +1,54 @@
 #include <pebble.h>
+#include "animation.h"
 
-/* coordinate defintions for tracing blocks */
-#define M1A GRect(103,6,35,7)
-#define M1A_COLLAPSED GRect(138,6,0,7)
-#define M1B GRect(131,13,7,13)
-#define M1B_COLLAPSED GRect(131,13,7,0)
-#define M2 GRect(131,26,7,39)
-#define M3 GRect(131,65,7,38)
-#define M4 GRect(131,103,7,39)
-#define M5A GRect(131,142,7,20)
-#define M5A_COLLAPSED GRect(131,162,7,0)
-#define M5B GRect(103,155,28,7)
-#define M5B_COLLAPSED GRect(131,155,0,7)
-#define M6 GRect(41,155,62,7)
-#define M7A GRect(6,155,35,7)
-#define M7A_COLLAPSED GRect(6,155,0,7)
-#define M7B GRect(6,142,7,13)
-#define M7B_COLLAPSED GRect(6,155,7,0)
-#define M8 GRect(6,103,7,39)
-#define M9 GRect(6,65,7,38)
-#define M10 GRect(6,26,7,39)
-#define M11A GRect(6,6,7,26)
-#define M11A_COLLAPSED GRect(6,6,7,0)
-#define M11B GRect(13,6,28,7)
-#define M11B_COLLAPSED GRect(13,6,0,7)
-#define M12 GRect(41,6,62,7)
-	
-#define H1A GRect(97,19,28,7)
-#define H1A_COLLAPSED GRect(125,19,0,7)
-#define H1B GRect(118,26,7,8)
-#define H1B_COLLAPSED GRect(118,26,7,0)
-#define H2 GRect(118,34,7,36)
-#define H3 GRect(118,70,7,28)
-#define H4 GRect(118,98,7,36)
-#define H5A GRect(118,134,7,15)
-#define H5A_COLLAPSED GRect(118,149,7,0)
-#define H5B GRect(97,142,21,7)
-#define H5B_COLLAPSED GRect(118,142,0,7)
-#define H6 GRect(47,142,50,7)
-#define H7A GRect(19,142,28,7)
-#define H7A_COLLAPSED GRect(19,142,0,7)
-#define H7B GRect(19,134,7,8)
-#define H7B_COLLAPSED GRect(19,142,7,0)
-#define H8 GRect(19,89,7,36)
-#define H9 GRect(19,70,7,28)
-#define H10 GRect(19,34,7,36)
-#define H11A GRect(19,19,7,15)
-#define H11A_COLLAPSED GRect(19,19,7,0)
-#define H11B GRect(26,19,21,7)
-#define H11B_COLLAPSED GRect(26,19,0,7)
-#define H12 GRect(47,19,50,7)
+/* appmessage + persist keys */
+enum {
+	KEY_INVERTED = 0,
+	KEY_VIBRATE_5 = 1,
+	KEY_FLICK = 2,
+	KEY_FLICK_STYLE = 3
+};
 
-/* persistant storage keys */
-#define PERSIST_INVERTED 1
-#define PERSIST_VIBRATE 2
-#define PERSIST_DATE 3
+/* flick view styles */
+enum {
+	FLICK_STYLE_A = 0,
+	FLICK_STYLE_B = 1,
+	FLICK_STYLE_C = 2
+};
 
 /* period for which the date is visible on accelerometer flick (ms)*/ 
 #define TIMER_DATE_DELAY 3000
 
 /* prototypes */
-void on_animation_stopped(Animation *anim, bool finished, void *context);
-void animate_layer(Layer *layer, GRect *start, GRect *finish, int duration, int delay);
 void setHour(int hour);
 void setMinute(int minute);
+void setDay(struct tm *tick_time); 
+void setTime(struct tm *tick_time);
+void updateAll();
 void invert_canvas_add();
 void invert_canvas_remove();
 void timer_callback(void *data);
 void accel_tap_handler(AccelAxisType axis, int32_t direction);
 void process_tuple(Tuple *t);
 void in_received_handler(DictionaryIterator *iter, void *context) ;
-void setDate(struct tm *tick_time); 
 void tick_handler(struct tm *tick_time, TimeUnits units_changed) ;
-
-/* appmessage keys */
-enum {
-	KEY_INVERTED = 0,
-	KEY_VIBRATE_5 = 1,
-	KEY_DATE = 2
-};
+void day_layer_create();
 
 Window *window;
 AppTimer *timer;
 GBitmap *bg_bitmap;
 BitmapLayer *bg_layer;
-TextLayer *date_layer;
+TextLayer *time_layer, *day_layer, *date_layer;
 InverterLayer *block_h_a, *block_h_b, *block_m_a, *block_m_b, *invert_canvas;
-char date_text[] = "Sun 01";
-bool isInverted, isVibrateOn, isDateOn;
+static char day_text[] = "XXXXXXXX";
+static char time_text[] = "XX:XX";
+static char date_text[] = "XX-XX-XX";
+bool isInverted, isVibrateOn, isFlickOn;
+static int flickStyle;
 
-/**************
-* Time and Date
-***************/
+/****************************
+* Time + Date
+****************************/
 
 void tick_handler(struct tm *tick_time, TimeUnits units_changed) {	
 	int minute = tick_time->tm_min;
@@ -109,9 +66,11 @@ void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 				// update hour
 				setHour(hour);
 				// update date
-				setDate(tick_time);
+				setDay(tick_time);
 			}
 		}
+		// update flick view time
+		setTime(tick_time);
 	}
 }
 
@@ -123,6 +82,7 @@ void setHour(int hour) {
 	if (hour == 0) {
 		hour = 12;
 	}
+	
 	// animate transition to current hour
 	switch (hour)
 	{
@@ -351,14 +311,65 @@ void setMinute(int minute) {
 	}
 }
 
+void setDay(struct tm *tick_time) {
+	switch (flickStyle) {
+		case FLICK_STYLE_A: {
+			strftime(day_text, sizeof("XXXXXXXX"), "%a %d", tick_time);
+			break;
+		}
+		case FLICK_STYLE_B: case FLICK_STYLE_C: {
+			strftime(day_text, sizeof("XXXXXXXX"), "%A", tick_time);
+			break;
+		}
+	}
+	text_layer_set_text(day_layer, day_text);
+}
+
+void setTime(struct tm *tick_time) {
+	if (clock_is_24h_style()) {
+		strftime(time_text, sizeof("XX:XX"), "%H:%M", tick_time);
+	} else {
+		strftime(time_text, sizeof("XX:XX"), "%I:%M", tick_time);
+	}
+	text_layer_set_text(time_layer, time_text);
+}
+
 void setDate(struct tm *tick_time) {
-	strftime(date_text, sizeof("Sun 01"), "%a %d", tick_time);
+	switch(flickStyle) {
+		case FLICK_STYLE_B: {
+			strftime(date_text, sizeof("XX-XX-XX"), "%m-%d-%y", tick_time);
+			break;
+		}
+		case FLICK_STYLE_C: {
+			strftime(date_text, sizeof("XX-XX-XX"), "%d-%m-%y", tick_time);
+			break;
+		}
+	}
 	text_layer_set_text(date_layer, date_text);
 }
 
-/**************
+void updateAll() {
+	struct tm *tick_time;
+	time_t temp;
+	temp = time(NULL);
+	tick_time = localtime(&temp);
+	int minute = tick_time->tm_min;
+	int hour = tick_time->tm_hour;	
+	
+	// round minute down to the nearest 5;
+	int remainder = minute % 5;
+	minute = minute - remainder;
+	
+	setMinute(minute);
+	setHour(hour);
+	setDay(tick_time);
+	setTime(tick_time);
+	setDate(tick_time);
+}
+
+/****************************
 * Invert Layer
-***************/
+****************************/
 
 void invert_canvas_add() {
 	layer_add_child(window_get_root_layer(window), (Layer*)invert_canvas);
@@ -368,37 +379,44 @@ void invert_canvas_remove() {
 	layer_remove_from_parent((Layer*)invert_canvas);
 }
 
-/**************
+/****************************
 * Accelerometer Timer
-***************/
+****************************/
 
 void timer_callback(void *data) {
-	layer_remove_from_parent((Layer*)date_layer);
+	layer_remove_from_parent((Layer*)day_layer);
+	if (flickStyle == FLICK_STYLE_B || flickStyle == FLICK_STYLE_C) {
+		layer_remove_from_parent((Layer*)time_layer);
+		layer_remove_from_parent((Layer*)date_layer);
+	}
 }
 
 void accel_tap_handler(AccelAxisType axis, int32_t direction) {
-  	// if inverter layer is present, insert date layer below it
+  	// if inverter layer is present, insert rest below it
 	if (isInverted) {
-		layer_insert_below_sibling((Layer*)date_layer, (Layer*)invert_canvas);	
+		layer_insert_below_sibling((Layer*)day_layer, (Layer*)invert_canvas);
+		if (flickStyle == FLICK_STYLE_B || flickStyle == FLICK_STYLE_C) {
+			layer_insert_below_sibling((Layer*)time_layer, (Layer*)invert_canvas);
+			layer_insert_below_sibling((Layer*)date_layer, (Layer*)invert_canvas);
+		}
 	} else {
-		layer_add_child(window_get_root_layer(window),(Layer*)date_layer);
+		layer_add_child(window_get_root_layer(window),(Layer*)day_layer);
+		if (flickStyle == FLICK_STYLE_B || flickStyle == FLICK_STYLE_C) {
+			layer_add_child(window_get_root_layer(window),(Layer*)time_layer);
+			layer_add_child(window_get_root_layer(window),(Layer*)date_layer);
+		}
 	}
 	// fire timer	
 	timer = app_timer_register(TIMER_DATE_DELAY, (AppTimerCallback)timer_callback, NULL);
 }
 
-/**************
+/****************************
 * App Message
-***************/
+****************************/
 
 void process_tuple(Tuple *t) {
-	// get key
 	int key = t->key;
-	
-	// get integer value
 	int value = t->value->int32;
-
-	// get string value
 	char string_value[32];
 	strcpy(string_value, t->value->cstring);
 	
@@ -415,28 +433,33 @@ void process_tuple(Tuple *t) {
 		} case KEY_VIBRATE_5: {
 			isVibrateOn = (strcmp(string_value, "on") == 0) ? true : false;
 			break;
-		} case KEY_DATE: {
+		} case KEY_FLICK: {
 			if ( strcmp(string_value, "on") == 0 ) {
 				accel_tap_service_subscribe(&accel_tap_handler);
-				isDateOn = true;
+				isFlickOn = true;
 			} else {
-				if (isDateOn) {
+				if (isFlickOn) {
 					accel_tap_service_unsubscribe();
 				}
-				isDateOn = false;
+				isFlickOn = false;
 			}
+			break;
+		} case KEY_FLICK_STYLE: {
+			// get first character from string, subtract '0' (48 ascii value);
+			flickStyle = (int)(string_value[0] - '0');
+			// force recreate day later
+			day_layer_create();
 			break;
 		}
 	}
+	updateAll();
 }
 
 void in_received_handler(DictionaryIterator *iter, void *context) {
-	// get first item
 	Tuple *t = dict_read_first(iter);
 	if(t) {
 		process_tuple(t);
 	}
-  	// get next item
   	while(t != NULL) {
 		t = dict_read_next(iter);
 		if(t) {
@@ -445,85 +468,77 @@ void in_received_handler(DictionaryIterator *iter, void *context) {
 	}
 }
 
-/**************
-* Animation
-***************/
-
-void on_animation_stopped(Animation *anim, bool finished, void *context) {
-    property_animation_destroy((PropertyAnimation*) anim);
-}
-
-void animate_layer(Layer *layer, GRect *start, GRect *finish, int duration, int delay)
-{
-    PropertyAnimation *anim = property_animation_create_layer_frame(layer, start, finish);
-
-    animation_set_duration((Animation*) anim, duration);
-    animation_set_delay((Animation*) anim, delay);
-     
-    AnimationHandlers handlers = {
-        .stopped = (AnimationStoppedHandler) on_animation_stopped
-    };
-    animation_set_handlers((Animation*) anim, handlers, NULL);
-
-    animation_schedule((Animation*) anim);
-}
-
-/**************
+/****************************
 * Window
-***************/
+****************************/
+
+void day_layer_create() {	
+	ResHandle font_handle_20 = resource_get_handle(RESOURCE_ID_FONT_IMAGINE_20);
+	ResHandle font_handle_14 = resource_get_handle(RESOURCE_ID_FONT_IMAGINE_14);
+	
+	// if layer exists, destroy
+	if (day_layer) {
+			text_layer_destroy(day_layer);
+	}
+	
+	// create layer
+	if (flickStyle == FLICK_STYLE_A) {
+		day_layer = text_layer_create(GRect(1,70,144,20));
+		text_layer_set_font(day_layer, fonts_load_custom_font(font_handle_20));
+	} else {
+		day_layer = text_layer_create(GRect(1,75,144,20));
+		text_layer_set_font(day_layer, fonts_load_custom_font(font_handle_14));
+	}
+	text_layer_set_background_color(day_layer, GColorClear);
+	text_layer_set_text_color(day_layer, GColorBlack);
+	text_layer_set_text_alignment(day_layer, GTextAlignmentCenter);
+}
 
 void window_load() {
-	// get font handle
-	ResHandle font_handle = resource_get_handle(RESOURCE_ID_FONT_IMAGINE_20);
+	ResHandle font_handle_25 = resource_get_handle(RESOURCE_ID_FONT_IMAGINE_25);
+	ResHandle font_handle_15 = resource_get_handle(RESOURCE_ID_FONT_IMAGINE_15);
 	
-	// set background
+	// background
 	bg_bitmap = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_BG);
 	bg_layer = bitmap_layer_create(GRect(0,0,144,168));
 	bitmap_layer_set_bitmap(bg_layer, bg_bitmap);
 	layer_add_child(window_get_root_layer(window), bitmap_layer_get_layer(bg_layer));
 	
-	// create travelling blocks to trace outlines
+	// travel blocks
 	block_m_a = inverter_layer_create(GRect(0,0,0,0));
 	block_m_b = inverter_layer_create(GRect(0,0,0,0));
 	block_h_a = inverter_layer_create(GRect(0,0,0,0));
 	block_h_b = inverter_layer_create(GRect(0,0,0,0));
-	
-	// create inverter layer for inverting the watch face
-	invert_canvas = inverter_layer_create(GRect(0,0,144,168));
-	
-	// add animating blocks to the window
 	layer_add_child(window_get_root_layer(window), (Layer*) block_m_a);
 	layer_add_child(window_get_root_layer(window), (Layer*) block_m_b);
 	layer_add_child(window_get_root_layer(window), (Layer*) block_h_a);	
 	layer_add_child(window_get_root_layer(window), (Layer*) block_h_b);
 	
-	// create date layer
-	date_layer = text_layer_create(GRect(0,70,144,20));
-	text_layer_set_background_color(date_layer, GColorClear);
-	text_layer_set_text_color(date_layer, GColorBlack);
-	text_layer_set_text_alignment(date_layer, GTextAlignmentCenter);
-	text_layer_set_font(date_layer, fonts_load_custom_font(font_handle));
-	
-	// add inverter layer if watchface is set to invert
+	// inverter layer
+	invert_canvas = inverter_layer_create(GRect(0,0,144,168));
 	if (isInverted) {
 		invert_canvas_add();
 	}
 	
+	// day layer
+	day_layer_create();
+	
+	// time layer
+	time_layer = text_layer_create(GRect(1,45, 144,40));
+	text_layer_set_background_color(time_layer, GColorClear);
+	text_layer_set_text_color(time_layer, GColorBlack);
+	text_layer_set_text_alignment(time_layer, GTextAlignmentCenter);
+	text_layer_set_font(time_layer, fonts_load_custom_font(font_handle_25));
+	
+	// date layer
+	date_layer = text_layer_create(GRect(1,93, 144,20));
+	text_layer_set_background_color(date_layer, GColorClear);
+	text_layer_set_text_color(date_layer, GColorBlack);
+	text_layer_set_text_alignment(date_layer, GTextAlignmentCenter);
+	text_layer_set_font(date_layer, fonts_load_custom_font(font_handle_15));
+
 	// set time and date initially
-	struct tm *tick_time;
-	time_t temp;
-	temp = time(NULL);
-	tick_time = localtime(&temp);
-	int minute = tick_time->tm_min;
-	int hour = tick_time->tm_hour;	
-	
-	// round minute down to the nearest 5;
-	int remainder = minute % 5;
-	minute = minute - remainder;
-	
-	setMinute(minute);
-	setHour(hour);
-	setDate(tick_time);
+	updateAll();
 }
 
 void window_unload() {
@@ -534,8 +549,9 @@ void window_unload() {
 	inverter_layer_destroy(block_h_a);
 	inverter_layer_destroy(block_h_b);
 	inverter_layer_destroy(invert_canvas);
+	text_layer_destroy(day_layer);
+	text_layer_destroy(time_layer);
 	text_layer_destroy(date_layer);
-	app_timer_cancel(timer);
 }
 
 void init() {
@@ -553,12 +569,13 @@ void init() {
 	app_message_open(512, 512);
 	
 	// read current settings 
-	isInverted = persist_exists(PERSIST_INVERTED) ? persist_read_bool(PERSIST_INVERTED) : false;
-	isVibrateOn = persist_exists(PERSIST_VIBRATE) ? persist_read_bool(PERSIST_VIBRATE) : false;
-	isDateOn = persist_exists(PERSIST_DATE) ? persist_read_bool(PERSIST_DATE) : false;
+	isInverted = persist_exists(KEY_INVERTED) ? persist_read_bool(KEY_INVERTED) : false;
+	isVibrateOn = persist_exists(KEY_VIBRATE_5) ? persist_read_bool(KEY_VIBRATE_5) : false;
+	isFlickOn = persist_exists(KEY_FLICK) ? persist_read_bool(KEY_FLICK) : false;
+	flickStyle = persist_exists(KEY_FLICK_STYLE) ? persist_read_int(KEY_FLICK_STYLE) : FLICK_STYLE_A;
 	
-	if (isDateOn) {
-		// subscribe to accelerometer for date
+	// subscribe to accelerometer for flick view
+	if (isFlickOn) {
 		accel_tap_service_subscribe(&accel_tap_handler);
 	}
 	
@@ -568,12 +585,13 @@ void init() {
 void deinit() {
 	window_destroy(window);
 	tick_timer_service_unsubscribe();
-	if (isDateOn) {
+	if (isFlickOn) {
 		accel_tap_service_unsubscribe();
 	}
-	persist_write_bool(PERSIST_INVERTED, isInverted);
-	persist_write_bool(PERSIST_VIBRATE, isVibrateOn);
-	persist_write_bool(PERSIST_DATE, isDateOn);
+	persist_write_bool(KEY_INVERTED, isInverted);
+	persist_write_bool(KEY_VIBRATE_5, isVibrateOn);
+	persist_write_bool(KEY_FLICK, isFlickOn);
+	persist_write_int(KEY_FLICK_STYLE, flickStyle);
 }
 
 int main(void) {
