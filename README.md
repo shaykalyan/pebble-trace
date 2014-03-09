@@ -6,7 +6,7 @@ The outer ring displays minutes and the inner ring indicates the hours. At five 
 
 ## Screenshots 
 
-![Photo](other/photo_small.jpg)
+![Photo](http://xshay.github.io/pebble-trace/other/photo_small.jpg)
 
 
 ![Photo](other/screenshot_animation.gif)
@@ -14,7 +14,13 @@ The outer ring displays minutes and the inner ring indicates the hours. At five 
 ![Photo](other/screenshot_2.png)
 ![Photo](other/screenshot_3.png)
 ![Photo](other/screenshot_4.png)
+
+### Inverted:
+
 ![Photo](other/screenshot_5.png)
+
+### Flick View Styles:
+
 ![Photo](other/screenshot_style_a.png)
 ![Photo](other/screenshot_style_b.png)
 ![Photo](other/screenshot_style_c.png)
