@@ -33,6 +33,8 @@ Simply search for **Trace** in the Pebble App Store to load it onto your device!
 Or alternatively, [click here](pebble://appstore/52ef5b1dc503c80b8d000028/) to launch the Pebble appstore page directly.
 
 ## Changlog
+- 1.3.1
+	- Fixed bug where a letter from Wednesday would get cut from display. 
 - 1.3.0
 	- Added different flick view styles. Updated configuration page respectively.
 - 1.2.0

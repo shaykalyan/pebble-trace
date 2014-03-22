@@ -40,7 +40,7 @@ GBitmap *bg_bitmap;
 BitmapLayer *bg_layer;
 TextLayer *time_layer, *day_layer, *date_layer;
 InverterLayer *block_h_a, *block_h_b, *block_m_a, *block_m_b, *invert_canvas;
-static char day_text[] = "XXXXXXXX";
+static char day_text[] = "XXXXXXXXX";
 static char time_text[] = "XX:XX";
 static char date_text[] = "XX-XX-XX";
 bool isInverted, isVibrateOn, isFlickOn;
@@ -314,11 +314,11 @@ void setMinute(int minute) {
 void setDay(struct tm *tick_time) {
 	switch (flickStyle) {
 		case FLICK_STYLE_A: {
-			strftime(day_text, sizeof("XXXXXXXX"), "%a %d", tick_time);
+			strftime(day_text, sizeof("XXXXXXXXX"), "%a %d", tick_time);
 			break;
 		}
 		case FLICK_STYLE_B: case FLICK_STYLE_C: {
-			strftime(day_text, sizeof("XXXXXXXX"), "%A", tick_time);
+			strftime(day_text, sizeof("XXXXXXXXX"), "%A", tick_time);
 			break;
 		}
 	}
@@ -474,7 +474,7 @@ void in_received_handler(DictionaryIterator *iter, void *context) {
 
 void day_layer_create() {	
 	ResHandle font_handle_20 = resource_get_handle(RESOURCE_ID_FONT_IMAGINE_20);
-	ResHandle font_handle_14 = resource_get_handle(RESOURCE_ID_FONT_IMAGINE_14);
+	ResHandle font_handle_12 = resource_get_handle(RESOURCE_ID_FONT_IMAGINE_12);
 	
 	// if layer exists, destroy
 	if (day_layer) {
@@ -486,8 +486,8 @@ void day_layer_create() {
 		day_layer = text_layer_create(GRect(1,70,144,20));
 		text_layer_set_font(day_layer, fonts_load_custom_font(font_handle_20));
 	} else {
-		day_layer = text_layer_create(GRect(1,75,144,20));
-		text_layer_set_font(day_layer, fonts_load_custom_font(font_handle_14));
+		day_layer = text_layer_create(GRect(1,76,144,20));
+		text_layer_set_font(day_layer, fonts_load_custom_font(font_handle_12));
 	}
 	text_layer_set_background_color(day_layer, GColorClear);
 	text_layer_set_text_color(day_layer, GColorBlack);

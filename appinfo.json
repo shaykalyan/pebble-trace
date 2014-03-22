@@ -21,12 +21,7 @@
         "media": [
             {
                 "type": "font",
-                "name": "FONT_IMAGINE_20",
-                "file": "fonts/imagine.ttf"
-            },
-            {
-                "type": "font",
-                "name": "FONT_IMAGINE_14",
+                "name": "FONT_IMAGINE_25",
                 "file": "fonts/imagine.ttf"
             },
             {
@@ -36,7 +31,12 @@
             },
             {
                 "type": "font",
-                "name": "FONT_IMAGINE_25",
+                "name": "FONT_IMAGINE_12",
+                "file": "fonts/imagine.ttf"
+            },
+            {
+                "type": "font",
+                "name": "FONT_IMAGINE_20",
                 "file": "fonts/imagine.ttf"
             },
             {
