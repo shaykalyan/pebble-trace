@@ -1,8 +1,10 @@
-#Trace - A Pebble watch face
+#Trace - A Pebble Watchface
 
-A minimalist watch face for the Pebble smart watch. 
+A minimalist watch face for the Pebble smartwatch. 
 
-The outer ring displays minutes and the inner ring indicates the hours. At five minute intervals, the tracing block animates 1/12th of the way along the edge. For example, the image below indicates a time of 7.15
+The outer ring displays minutes and the inner ring indicates the hours. At five minute intervals, the tracing block animates 1/12th of the way along the edge. For example, the image below indicates a time of 7:15.
+
+![Photo](http://pblweb.com/badge/52ef5b1dc503c80b8d000028/white/small)
 
 ## Screenshots 
 
@@ -30,9 +32,9 @@ The outer ring displays minutes and the inner ring indicates the hours. At five 
 Requires Pebble 2.0 firmware and above to install this watch face. 
 
 Simply search for **Trace** in the Pebble App Store to load it onto your device!
-Or alternatively, [click here](pebble://appstore/52ef5b1dc503c80b8d000028/) to launch the Pebble appstore page directly.
+Or alternatively, [click here](pebble://appstore/52ef5b1dc503c80b8d000028/) to launch the Pebble Appstore directly.
 
-## Changlog
+## Changelog
 - 1.3.1
 	- Fixed bug where a letter from Wednesday would get cut from display. 
 - 1.3.0
@@ -47,4 +49,5 @@ Or alternatively, [click here](pebble://appstore/52ef5b1dc503c80b8d000028/) to l
     - Initial release
 
 ## Credit
-Thanks to [@C-D-Lewis](https://github.com/C-D-Lewis) for his easy to follow tuts and examples to help get me started!
+- Thanks to [@C-D-Lewis](https://github.com/C-D-Lewis) for his easy to follow tuts and examples to help get me started!
+- Pebble Appstore badge provided by [@matthewtole](https://github.com/matthewtole) via [PblWeb](http://pblweb.com/)
