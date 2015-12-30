@@ -8,7 +8,7 @@ The outer ring displays minutes and the inner ring indicates the hours. At five 
 
 ## Screenshots 
 
-![Photo](http://xshay.github.io/pebble-trace/other/photo_small.jpg)
+![Photo](other/photo_small.jpg)
 
 
 ![Photo](other/screenshot_animation.gif)
@@ -31,10 +31,12 @@ The outer ring displays minutes and the inner ring indicates the hours. At five 
 
 Requires Pebble 2.0 firmware and above to install this watch face. 
 
-Simply search for **Trace** in the Pebble App Store to load it onto your device!
-Or alternatively, [click here](pebble://appstore/52ef5b1dc503c80b8d000028/) to launch the Pebble Appstore directly.
+Simply search for [Trace](https://apps.getpebble.com/en_US/application/52ef5b1dc503c80b8d000028) in the Pebble App Store to load it onto your device!
+Or alternatively, [click here](pebble://appstore/52ef5b1dc503c80b8d000028/) from your mobile device to launch the Pebble Appstore directly.
 
 ## Changelog
+- 1.4
+    - Updated URL pointing to configuration page.
 - 1.3.1
 	- Fixed bug where a letter from Wednesday would get cut from display. 
 - 1.3.0

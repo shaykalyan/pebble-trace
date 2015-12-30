@@ -9,7 +9,7 @@ Pebble.addEventListener("ready", function() {
 Pebble.addEventListener("showConfiguration", function() {
 	console.log("Trace: Showing Configuration");
 	
-	var url = "http://xshay.github.io/pebble-trace/?";
+	var url = "http://shaykalyan.github.io/pebble-trace/?";
 	
 	var firstParam = true;
 	
